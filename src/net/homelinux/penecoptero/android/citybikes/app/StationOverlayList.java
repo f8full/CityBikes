@@ -39,8 +39,8 @@ public class StationOverlayList {
 		this.context = context;
 		this.mapOverlays = mapOverlays;
 		this.handler = handler;
-		hOverlay = new HomeOverlay(this.context, handler);
-		hOverlay.setLastKnownLocation();
+		//hOverlay = new HomeOverlay(this.context, handler);
+		//hOverlay.setLastKnownLocation();
 		addHome();
 	}
 
@@ -113,7 +113,7 @@ public class StationOverlayList {
 	}
 
 	public void updateHome() {
-		hOverlay.setLastKnownLocation();
+		//hOverlay.setLastKnownLocation();
 	}
 
 	public void clear() {

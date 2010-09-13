@@ -11,6 +11,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.google.android.maps.GeoPoint;
 
@@ -21,6 +22,8 @@ public class Locator {
 	private Location currentLocation;
 	private GeoPoint currentGeoPoint;
 	
+	private boolean locked = false;
+	
 	private List<LocationListener> listeners;
 	
 	private LocationManager locationManager;
@@ -28,8 +31,7 @@ public class Locator {
 	public Locator(Context context, Handler handler){
 		this.handler = handler;
 		locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-		update(getLastKnownLocation());
-		startUpdates();
+		startUpdates(true);
 	}
 	
 	public Location getLastKnownLocation() {
@@ -48,7 +50,8 @@ public class Locator {
 		return currentLocation;
 	}
 	
-	public void startUpdates(){
+	public void startUpdates(boolean instantLastLocation){
+		Log.i("CityBikes","Starting all location updates");
 		listeners = new LinkedList<LocationListener>();
 		LocationListener ll;
 		
@@ -57,8 +60,8 @@ public class Locator {
 
 				@Override
 				public void onLocationChanged(Location location) {
-					// TODO Auto-generated method stub
-					update(location);
+					if (!locked)
+						update(location);
 				}
 
 				@Override
@@ -83,9 +86,13 @@ public class Locator {
 			listeners.add(ll);
 			locationManager.requestLocationUpdates(i.next(), 60000, 25,ll);
 		}
+		if (instantLastLocation){
+			update(getLastKnownLocation());
+		}
 	}
 	
 	public void stopUpdates(){
+		Log.i("CityBikes","Stopping all location updates");
 		for( Iterator<LocationListener> ll = listeners.iterator(); ll.hasNext(); ){
 			locationManager.removeUpdates(ll.next());
 		}
@@ -93,17 +100,32 @@ public class Locator {
 	
 	public void restartUpdates(){
 		stopUpdates();
-		startUpdates();
+		startUpdates(false);
 	}
 	
 	private void update(Location newLocation){
-		currentLocation = newLocation;
-		currentGeoPoint = new GeoPoint((int) (currentLocation.getLatitude()*1E6), (int) (currentLocation.getLongitude()*1E6)); 
-		Message msg = new Message();
-		msg.what = LOCATION_CHANGED;
-		msg.arg1 = currentGeoPoint.getLatitudeE6(); 
-		msg.arg2 = currentGeoPoint.getLongitudeE6();
-		msg.obj = currentLocation;
-		handler.sendMessage(msg);
+		if (newLocation!=null){
+			currentLocation = newLocation;
+			currentGeoPoint = new GeoPoint((int) (currentLocation.getLatitude()*1E6), (int) (currentLocation.getLongitude()*1E6)); 
+			Message msg = new Message();
+			msg.what = LOCATION_CHANGED;
+			msg.arg1 = currentGeoPoint.getLatitudeE6(); 
+			msg.arg2 = currentGeoPoint.getLongitudeE6();
+			msg.obj = currentLocation;
+			handler.sendMessage(msg);
+		}
+	}
+	
+	public void lockCenter(GeoPoint center){
+		locked = true;
+		Location dummy = new Location("dummy");
+		dummy.setLatitude(center.getLatitudeE6()/1E6);
+		dummy.setLongitude(center.getLongitudeE6()/1E6);
+		update(dummy);
+	}
+	
+	public void unlockCenter(){
+		locked = false;
+		update(getLastKnownLocation());
 	}
 }

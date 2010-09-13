@@ -5,6 +5,7 @@ import android.content.Context;
 import com.google.android.maps.GeoPoint;
 
 public class Station {
+	
 	private int bikes;
 	private int free;
 	private String timestamp;
@@ -17,17 +18,14 @@ public class Station {
 	
 	private double metersDistance;
 	
-	private Context context;
-	
 	private GeoPoint point;
 	
-	public Station (int id, String name, int bikes, int free, String timestamp, Context context, GeoPoint center){
+	public Station (int id, String name, int bikes, int free, String timestamp, GeoPoint center){
 		this.id = id;
 		this.name = name;
 		this.bikes = bikes;
 		this.free = free;
 		this.timestamp = timestamp;
-		this.context = context;
 		this.point = center;
 	}
 
@@ -59,7 +57,7 @@ public class Station {
 		this.metersDistance = distance;
 	}
 	
-	public void populateStrings() {
+	public void populateStrings(Context context) {
 		ocupationText = Integer.toString(this.bikes) + " "
 				+ context.getString(R.string.bikes) + " / "
 				+ Integer.toString(this.free) + " "

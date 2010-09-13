@@ -16,21 +16,12 @@
 
 package net.homelinux.penecoptero.android.citybikes.app;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import net.homelinux.penecoptero.android.citybikes.utils.CircleHelper;
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Cap;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 
@@ -42,8 +33,6 @@ import com.google.android.maps.Projection;
 public class HomeOverlay extends Overlay {
 
 	public final int MOTION_CIRCLE_STOP = 100;
-	public final int LOCATION_CHANGED = 101;
-	private Context context;
 	private GeoPoint point;
 
 	private float radiusInPixels;
@@ -62,131 +51,16 @@ public class HomeOverlay extends Overlay {
 
 	private Handler handler;
 
-	private List<LocationListener> listeners;
-
-	public HomeOverlay(Context context, Handler handler) {
-		////Log.i("openBicing", "AWESOME");
-		this.context = context;
+	public HomeOverlay(GeoPoint center, Handler handler) {
+		point = center;
 		this.handler = handler;
-		LocationManager locationManager = (LocationManager) this.context
-				.getSystemService(Context.LOCATION_SERVICE);
-		List<String> providers = locationManager.getProviders(true);
-		listeners = new LinkedList<LocationListener>();
-		for (int i = 0; i < providers.size(); i++) {
-			LocationListener ll = new LocationListener() {
-				@Override
-				public void onLocationChanged(Location location) {
-					// TODO Auto-generated method stub
-					update(location);
-					//////Log.i("openBicing", "Location has changed");
-				}
-
-				@Override
-				public void onProviderDisabled(String provider) {
-					// TODO Auto-generated method stub
-					//////Log.i("openBicing", provider + " is disabled");
-
-				}
-
-				@Override
-				public void onProviderEnabled(String provider) {
-					// TODO Auto-generated method stub
-					//////Log.i("openBicing", provider + " is enabled");
-				}
-
-				@Override
-				public void onStatusChanged(String provider, int status,
-						Bundle extras) {
-					// TODO Auto-generated method stub
-					//////Log.i("openBicing", provider + " status Changed");
-				}
-
-			};
-			listeners.add(ll);
-			locationManager.requestLocationUpdates(providers.get(i), 60000, 25,
-					ll);
-		}
-		setLastKnownLocation();
 	}
+	
 
-	public void stopUpdates() {
-		LocationManager locationManager = (LocationManager) this.context
-				.getSystemService(Context.LOCATION_SERVICE);
-		Iterator<LocationListener> ll = listeners.iterator();
-		while (ll.hasNext()) {
-			locationManager.removeUpdates(ll.next());
-		}
+	public void moveCenter(GeoPoint point){
+		this.point = point;
 	}
-
-	public void restartUpdates() {
-		//////Log.i("openBicing", "restarting updates");
-		this.stopUpdates();
-		LocationManager locationManager = (LocationManager) this.context
-				.getSystemService(Context.LOCATION_SERVICE);
-		List<String> providers = locationManager.getProviders(true);
-		listeners = new LinkedList<LocationListener>();
-		for (int i = 0; i < providers.size(); i++) {
-			LocationListener ll = new LocationListener() {
-				@Override
-				public void onLocationChanged(Location location) {
-					// TODO Auto-generated method stub
-					update(location);
-					////Log.i("openBicing", "Location has changed");
-				}
-
-				@Override
-				public void onProviderDisabled(String provider) {
-					// TODO Auto-generated method stub
-					////Log.i("openBicing", provider + " is disabled");
-
-				}
-
-				@Override
-				public void onProviderEnabled(String provider) {
-					// TODO Auto-generated method stub
-					////Log.i("openBicing", provider + " is enabled");
-				}
-
-				@Override
-				public void onStatusChanged(String provider, int status,
-						Bundle extras) {
-					// TODO Auto-generated method stub
-					////Log.i("openBicing", provider + " status Changed");
-				}
-
-			};
-			listeners.add(ll);
-			locationManager.requestLocationUpdates(providers.get(i), 60000, 25,
-					ll);
-		}
-		setLastKnownLocation();
-
-	}
-
-	public void setLastKnownLocation() {
-		LocationManager locationManager = (LocationManager) this.context
-				.getSystemService(Context.LOCATION_SERVICE);
-		Location location = locationManager.getLastKnownLocation("gps");
-		if (location == null) {
-			location = locationManager.getLastKnownLocation("network");
-		}
-		update(location);
-	}
-
-	public void update(Location location) {
-		if (location != null) {
-			Double lat = location.getLatitude() * 1E6;
-			Double lng = location.getLongitude() * 1E6;
-			this.point = new GeoPoint(lat.intValue(), lng.intValue());
-			handler.sendEmptyMessage(LOCATION_CHANGED);
-		} else {
-			Double lat = 41.3937256 * 1E6;
-			Double lng = 2.1647042 * 1E6;
-			this.point = new GeoPoint(lat.intValue(), lng.intValue());
-			handler.sendEmptyMessage(LOCATION_CHANGED);
-		}
-	}
-
+	
 	public void setRadius(int meters) {
 		this.radiusInMeters = meters;
 	}
