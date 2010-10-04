@@ -17,6 +17,9 @@ import com.google.android.maps.GeoPoint;
 
 public class Locator {
 	public static final int LOCATION_CHANGED = 101;
+	public static final int STOPPED = 0;
+	public static final int RUNNING = 1;
+	public static final int UNKNOWN = 2;
 	
 	private Handler handler;
 	private Location currentLocation;
@@ -27,6 +30,8 @@ public class Locator {
 	private List<LocationListener> listeners;
 	
 	private LocationManager locationManager;
+	
+	private int status = UNKNOWN;
 	
 	public Locator(Context context, Handler handler){
 		this.handler = handler;
@@ -51,6 +56,7 @@ public class Locator {
 	}
 	
 	public void startUpdates(boolean instantLastLocation){
+		status = RUNNING;
 		Log.i("CityBikes","Starting all location updates");
 		listeners = new LinkedList<LocationListener>();
 		LocationListener ll;
@@ -96,6 +102,7 @@ public class Locator {
 		for( Iterator<LocationListener> ll = listeners.iterator(); ll.hasNext(); ){
 			locationManager.removeUpdates(ll.next());
 		}
+		status = STOPPED;
 	}
 	
 	public void restartUpdates(){
@@ -127,5 +134,9 @@ public class Locator {
 	public void unlockCenter(){
 		locked = false;
 		update(getLastKnownLocation());
+	}
+	
+	public int getStatus(){
+		return status;
 	}
 }

@@ -32,7 +32,7 @@ import com.google.android.maps.Projection;
 
 public class HomeOverlay extends Overlay {
 
-	public final int MOTION_CIRCLE_STOP = 100;
+	public static final int MOTION_CIRCLE_STOP = 100;
 	private GeoPoint point;
 
 	private float radiusInPixels;
@@ -76,7 +76,6 @@ public class HomeOverlay extends Overlay {
 	@Override
 	public boolean draw(Canvas canvas, MapView mapView, boolean shadow,
 			long when) {
-
 		try {
 			Projection astral = mapView.getProjection();
 			Point screenPixels = astral.toPixels(this.point, null);

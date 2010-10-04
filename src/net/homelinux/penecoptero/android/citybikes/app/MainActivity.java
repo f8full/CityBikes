@@ -42,6 +42,7 @@ public class MainActivity extends MapActivity{
 	private MapView mapView;
 	private SharedPreferences settings;
 	private Locator locator;
+	private StationsDBAdapter stationsDBAdapter;
 	
 	private Context context;
 	
@@ -51,11 +52,13 @@ public class MainActivity extends MapActivity{
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		mapView = (MapView) findViewById(R.id.mapview);
+		
+		context = getApplicationContext();
 		
 		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 		
 		settings = getSharedPreferences(CityBikes.PREFERENCES_NAME,0);
-		context = getApplicationContext();
 		
 		locator = new Locator(context, new Handler(){
 			@Override
@@ -64,22 +67,44 @@ public class MainActivity extends MapActivity{
 					GeoPoint point = new GeoPoint(msg.arg1, msg.arg2);
 					hOverlay.moveCenter(point);
 					mapView.getController().animateTo(point);
+					stationsDBAdapter.setCenter(point);
+					try{
+						stationsDBAdapter.orderMemory(point);
+						stationsDBAdapter.filterDisplayList(hOverlay.getRadius());
+						mapView.postInvalidate();
+					}catch(Exception e){
+						
+					}
 				}
 			}
 		});
 		
-		mapView = (MapView) findViewById(R.id.mapview);
+		StationOverlayList stationOverlayList = new StationOverlayList(mapView.getOverlays(), new Handler(){
+			
+		});
+		
+		stationsDBAdapter = new StationsDBAdapter(new Handler(){
+			
+		}, stationOverlayList, locator.getCurrentGeoPoint());
+		
 		hackZoom(mapView);
 		applyMapViewLongPressListener(mapView);
 		
 		hOverlay = new HomeOverlay(locator.getCurrentGeoPoint(),new Handler(){
 			@Override
 			public void handleMessage(Message msg) {
-				
+				if (msg.what == HomeOverlay.MOTION_CIRCLE_STOP){
+					try {
+						stationsDBAdapter.filterDisplayList(hOverlay.getRadius());
+						mapView.postInvalidate();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		});
-		
-		mapView.getOverlays().add(hOverlay);
+		stationOverlayList.addOverlay(hOverlay);
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -107,6 +132,12 @@ public class MainActivity extends MapActivity{
 		    case R.id.menu_item_location:
 		        locator.unlockCenter();
 		        return true;
+		    case R.id.menu_item_sync:
+				try{
+					stationsDBAdapter.doShit();
+				}catch (Exception e){
+					
+				}
 		    default:
 		        return super.onOptionsItemSelected(item);
 	    }
@@ -156,6 +187,7 @@ public class MainActivity extends MapActivity{
 	@Override
 	protected void onStop() {
 		super.onStop();
+		locator.stopUpdates();
 	}
 	
 	@Override

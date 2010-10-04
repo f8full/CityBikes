@@ -16,9 +16,14 @@
 
 package net.homelinux.penecoptero.android.citybikes.app;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+import net.homelinux.penecoptero.android.citybikes.utils.CircleHelper;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,23 +31,21 @@ import org.json.JSONObject;
 import android.os.Handler;
 
 import com.google.android.maps.GeoPoint;
+import com.google.android.maps.Overlay;
 
 
 public class StationsDBAdapter implements Runnable {
 
-	public static final int FETCH = 0;
-	public static final int UPDATE_MAP = 1;
-	public static final int UPDATE_MAP_LESS = 2;
-	public static final int UPDATE_DATABASE = 3;
-	public static final int NETWORK_ERROR = 4;
-	public static final String TIMESTAMP_FORMAT = "HH:mm:ss dd/MM/yyyy";
-	
 	private Handler handlerOut;
+	
 	private StationOverlayList stationsDisplayList;
+	
 	private List<StationOverlay> stationsMemoryMap;
+	
 	private Queue<Integer> toDo;
+	
 	private GeoPoint center;
-	private String last_updated;	
+	
 	private RESTHelper connector;
 	
 	public StationsDBAdapter (Handler handler, StationOverlayList stationsDisplayList){
@@ -77,17 +80,58 @@ public class StationsDBAdapter implements Runnable {
 		name = json_station.getString("name");
 		lat = Integer.parseInt(json_station.getString("lat"));
 		lng = Integer.parseInt(json_station.getString("lng"));
-		
-		
+		timestamp = json_station.getString("timestamp");
+		bikes = json_station.getInt("bikes");
+		free = json_station.getInt("free");
+		return new Station(id, name, bikes, free, timestamp, new GeoPoint(lat, lng));
 	}
-	private void buildMemory(JSONArray stations) throws Exception{
+	
+	public void buildMemory(JSONArray stations) throws Exception{
 		stationsMemoryMap = new LinkedList<StationOverlay>();
-		
-		
+		StationOverlay tmp;
+		for (int i = 0; i < stations.length(); i++){
+			tmp = new StationOverlay(parseStation(stations.getJSONObject(i)));
+			if (center != null)
+				tmp.getStation().setMetersDistance(CircleHelper.gp2m(center, tmp.getStation().getCenter()));
+			stationsMemoryMap.add(tmp);
+		}
 	}
+	
+	public void orderMemory(GeoPoint center) throws Exception{
+		StationOverlay tmp;
+		for (Iterator<StationOverlay> so = stationsMemoryMap.iterator(); so.hasNext();){
+			tmp = so.next();
+			tmp.getStation().setMetersDistance(CircleHelper.gp2m(center, tmp.getStation().getCenter()));
+		}
+	}
+	
+	public void filterDisplayList(int radius) throws Exception{
+		stationsDisplayList.clearStationOverlays();
+		StationOverlay tmp;
+		for (Iterator<StationOverlay> so = stationsMemoryMap.iterator(); so.hasNext();){
+			tmp = so.next();
+			if ((tmp.getStation().getMetersDistance() + tmp.getStation().getMetersDistance() * 0.35) <= radius)
+				stationsDisplayList.addStationOverlay(tmp);
+		}
+	}
+	
+	public void allDisplayList() throws Exception{
+		stationsDisplayList.clearStationOverlays();
+		for (Iterator<StationOverlay> so = stationsMemoryMap.iterator(); so.hasNext();){
+			stationsDisplayList.addStationOverlay(so.next());
+		}
+	}
+	
 	@Override
 	public void run() {
 	
 		
+	}
+	
+	public void doShit() throws Exception{
+		String stations = fetchStations("http://penecoptero.homelinux.net/citybikes/site/site.py/api/bicing.json");
+		buildMemory(new JSONArray(stations));
+		orderMemory(center);
+		filterDisplayList(1000);
 	}
 }

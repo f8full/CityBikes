@@ -57,8 +57,6 @@ public class StationOverlay extends Overlay {
 	private Paint currentBorderPaint;
 	private Paint selectedPaint;
 
-	
-
 	private int position = -1;
 	
 	private Station station;
